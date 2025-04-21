@@ -2,6 +2,7 @@
   "devDependencies": {
     "@faker-js/faker": "^8.0.2",
     "cypress": "^14.2.0",
+    "cypress-iframe": "^1.0.1",
     "cypress-plugin-stripe-elements": "^1.0.2"
   },
   "dependencies": {

@@ -1,4 +1,5 @@
 const { faker } = require("@faker-js/faker");
+import "cypress-iframe";
 
 Cypress.on("uncaught:exception", (err, runnable) => {
   // prevent the error from failing the test
@@ -14,7 +15,6 @@ Cypress.Commands.add("login", () => {
   cy.get("button[type='submit']").click();
   cy.visit("/");
 });
-
 
 Cypress.Commands.add("home", () => {
   cy.visit("/");
@@ -33,12 +33,14 @@ Cypress.Commands.add("cmsLogin", () => {
     .should("exist")
     .type(Cypress.env("CMSPW"));
 
-  cy.contains("button", "Sign In").click();  
+  cy.contains("button", "Sign In").click();
 
   cy.url().should("include", "/admin/dashboard");
-  cy.get(".card-header .card-title").should("contain.text", "Welcome to Dashboard");
-  
-  });
+  cy.get(".card-header .card-title").should(
+    "contain.text",
+    "Welcome to Dashboard"
+  );
+});
 
 Cypress.Commands.add("dbLogin", () => {
   cy.visit("https://apid.toolfix.com.au/phpmyadmin/");
@@ -92,36 +94,61 @@ Cypress.Commands.add("cmsVisit", (path) => {
   cy.visit(Cypress.env("CMSURL") + path);
 });
 
+Cypress.Commands.add(
+  "fillRegistrationForm",
+  ({
+    fName,
+    lName,
+    email,
+    phone,
+    company,
+    address,
+    password,
+    confirmPassword,
+  }) => {
+    cy.get(".grid > :nth-child(1) > .w-full").type(fName);
+    cy.get(".grid > :nth-child(2) > .w-full").type(lName);
+    cy.get(".relative #email").type(email);
+    cy.get(":nth-child(3) > .w-full").type(phone);
+    cy.get(":nth-child(4) > .w-full").type(company);
+    cy.get('input[placeholder="Enter Address"]').type(address);
+    cy.wait(2000);
+    cy.get(".form > .absolute > :nth-child(1)").click();
+    cy.get(":nth-child(11) > .relative > .w-full").type(password);
+    cy.get(":nth-child(12) > .relative > .w-full").type(confirmPassword);
+    cy.get(".mt-7 > .p-3").click();
+  }
+);
 
-Cypress.Commands.add("fillRegistrationForm",({fName,lName,email,phone,company,address,password,confirmPassword})=>{
-  cy.get(".grid > :nth-child(1) > .w-full").type(fName);
-  cy.get(".grid > :nth-child(2) > .w-full").type(lName);
-  cy.get(".relative #email").type(email);
-  cy.get(":nth-child(3) > .w-full").type(phone);
-  cy.get(":nth-child(4) > .w-full").type(company);
-  cy.get('input[placeholder="Enter Address"]').type(address);
-  cy.wait(2000);
-  cy.get(".form > .absolute > :nth-child(1)").click();
-  cy.get(":nth-child(11) > .relative > .w-full").type(password);
-  cy.get(":nth-child(12) > .relative > .w-full").type(confirmPassword);
-  cy.get(".mt-7 > .p-3").click();
-});
+Cypress.Commands.add(
+  "addContactUsForm",
+  ({ fullName, email, location, phone, subject, message }) => {
+    console.log({ fullName, email, location, phone, subject, message });
 
-Cypress.Commands.add("addContactUsForm",({fullName, email, location, phone, subject, message}) => {
+    cy.get(".form-input input[placeholder='David Blogg']").type(fullName);
+    cy.get(".relative #email").type(email);
+    cy.get(".form-input input[placeholder='Sydney']").type(location);
+    cy.get(".form-input input[placeholder='01 1234 2456 8793']").type(phone);
+    cy.get(".form-input input[placeholder='Subject Here']").type(subject);
+    cy.wait(1000);
+    cy.get("textarea[placeholder='Message Here']").type(message);
 
-  console.log({ fullName, email, location, phone, subject, message }); 
+    cy.get("button[type='submit']").click();
+  }
+);
 
-  cy.get(".form-input input[placeholder='David Blogg']").type(fullName);
-  cy.get(".relative #email").type(email);
-  cy.get(".form-input input[placeholder='Sydney']").type(location);
-  cy.get(".form-input input[placeholder='01 1234 2456 8793']").type(phone);
-  cy.get(".form-input input[placeholder='Subject Here']").type(subject);
-  cy.wait(1000);
-  cy.get("textarea[placeholder='Message Here']").type(message);
+Cypress.Commands.add(
+  "addFaqForm",
+  ({ question, answer, status, sortOrder }) => {
+    cy.get("#question").type(question);
 
-  cy.get("button[type='submit']").click();
-});
+    cy.frameLoaded("iframe");
+    cy.iframe("iframe").clear().type(answer);
 
+    cy.get("#faq_status_id").select("Draft").should("have.value", "Draft");
+    cy.get("#sort_order").type(sortOrder);
+  }
+);
 
 // ***********************************************
 // This example commands.js shows you how to

@@ -1,0 +1,63 @@
+[
+    {
+      "testName": "All fields empty",
+      "fullName": "",
+      "email": "",
+      "location": "",
+      "phone": "",
+      "subject": "",
+      "message": "",
+      "expectedError": [
+                          "Please enter your full name",
+                          "Please enter your valid email address",
+                          "Please enter your location",
+                          "Please enter your valid phone number",
+                          "Please enter your subject",
+                          "Please enter your message"
+                        ]
+
+    },
+    {
+      "testName": "Invalid email format",
+      "fullName": "Test User",
+      "email": "invalid-email",
+      "location": "Sydney",
+      "phone": "61 2 5124 0000",
+      "subject": "Invalid Email Test",
+      "message": "This is a test with invalid email.",
+      "expectedError": "Please enter a valid email address.",
+      "expectedDisable": true
+
+    },
+    {
+        "testName": "Too short number",
+        "fullName": "Test User",
+        "email": "test@intuji.com",
+        "location": "Perth",
+        "phone": "12345",
+        "subject": "Short Message Test",
+        "message": "Hi",
+        "expectedError": "Phone number is too short"
+    },
+    {
+        "testName": "Too long number",
+        "fullName": "Test User",
+        "email": "test@intuji.com",
+        "location": "Perth",
+        "phone": "123123123123123",
+        "subject": "Short Message Test",
+        "message": "Hi",
+        "expectedError": "Phone number is too long"
+    },
+    {
+        "testName": "Invalid phone number",
+        "fullName": "Test User",
+        "email": "test@intuji.com",
+        "location": "Perth",
+        "phone": "123123123",
+        "subject": "Short Message Test",
+        "message": "Hi",
+        "expectedError": "Please enter valid Australian phone number"
+    }
+  ]
+  
