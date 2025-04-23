@@ -150,61 +150,132 @@ Cypress.Commands.add(
   }
 );
 
-
-
 Cypress.Commands.add("scrollToSocialMedia", () => {
-  
-  cy.get('.grid-cols-4').scrollIntoView().should("be.visible");  // Scroll  till social media  section appears in the frame
-
+  cy.get(".grid-cols-4").scrollIntoView().should("be.visible"); // Scroll  till social media  section appears in the frame
 });
 
 Cypress.Commands.add("initalEightPosts", () => {
-  
-  cy.get('.grid-cols-4 .flex.items-center.justify-between.px-4.py-3 .flex.items-center.gap-x-2 .font-semibold.leading-6 a').should('have.length','8');
-
+  cy.get(
+    ".grid-cols-4 .flex.items-center.justify-between.px-4.py-3 .flex.items-center.gap-x-2 .font-semibold.leading-6 a"
+  ).should("have.length", "8");
 });
-
 
 Cypress.Commands.add("loadMorePosts", () => {
   let totalPosts = 8;
 
   // Initial validation of the starting 8 posts
-  cy.initalEightPosts({ timeout: 10000 }).should('have.length', totalPosts).then(() => {
+  cy.initalEightPosts({ timeout: 10000 })
+    .should("have.length", totalPosts)
+    .then(() => {
       console.log(`Initial posts validated: ${totalPosts}`);
       loadPostsAndValidate();
     });
 
   // Recursive function to load posts and validate
   function loadPostsAndValidate() {
-    cy.get('button').contains('Load More').then(($button) => {
-          cy.wrap($button).should('be.visible').click();
+    cy.get("button")
+      .contains("Load More")
+      .then(($button) => {
+        cy.wrap($button).should("be.visible").click();
+        cy.wait(1000);
+
+        // Wait for posts to load and validate the new count
+        cy.get(
+          ".grid-cols-4 .flex.items-center.justify-between.px-4.py-3 .flex.items-center.gap-x-2 .font-semibold.leading-6 a"
+        ).then(($posts) => {
           cy.wait(1000);
+          const newCount = $posts.length;
+          const added = newCount - totalPosts;
 
-          // Wait for posts to load and validate the new count
-          cy.get('.grid-cols-4 .flex.items-center.justify-between.px-4.py-3 .flex.items-center.gap-x-2 .font-semibold.leading-6 a').then(($posts) => {
-            cy.wait(1000);
-            const newCount = $posts.length;
-            const added = newCount - totalPosts;
-            
-            // Log progress
-            console.log(`Loaded ${added} more posts, total now: ${newCount}`);
-            console.log(`newCount :: ${newCount} && added :: ${added}`);
+          // Log progress
+          console.log(`Loaded ${added} more posts, total now: ${newCount}`);
+          console.log(`newCount :: ${newCount} && added :: ${added}`);
 
-            // Update total posts
-            totalPosts = newCount;
-            console.log(`totalPosts :: ${totalPosts} `);
+          // Update total posts
+          totalPosts = newCount;
+          console.log(`totalPosts :: ${totalPosts} `);
 
-            if (added < 8) {
-              console.log("Fewer than 8 posts added. Reached the end.");
-              return;
-            }
+          if (added < 8) {
+            console.log("Fewer than 8 posts added. Reached the end.");
+            return;
+          }
 
-            // Continue loading if the button is still available
-            loadPostsAndValidate();
-          });
-        
+          // Continue loading if the button is still available
+          loadPostsAndValidate();
+        });
       });
   }
+});
+
+Cypress.Commands.add("getCategoriesFromCMS", () => {
+  const checkedProducts = [];
+  const columnIndexMap = {};
+
+  cy.cmsLogin();
+  cy.contains("a.menu-link .menu-text", "Product Categories").click();
+  cy.location("pathname").should("contain", "/product-categories");
+
+  return cy
+    .get("table#datatable thead tr th")
+    .each(($th, index) => {
+      const headerText = $th.text().trim();
+      columnIndexMap[headerText] = index;
+    })
+    .then(() => {
+      function scrapePageAndGoNext() {
+        return cy.wait(500).then(() => {
+          return cy
+            .get("table#datatable tbody tr")
+            .each(($row) => {
+              const $columns = $row.find("td");
+
+              const categoryName = $columns
+                .eq(columnIndexMap["Category Name"])
+                .text()
+                .trim();
+              const isBrowseProductChecked = $columns
+                .eq(columnIndexMap["Browse Product?"])
+                .find('input[type="checkbox"]')
+                .prop("checked"); //check if the property "checked" present or not & returned true or false
+
+              const browseOrderValue = parseInt(
+                $columns
+                  .eq(columnIndexMap["Browse Order"])
+                  .find('input[type="number"]')
+                  .val()
+              );
+
+              if (isBrowseProductChecked) {
+                checkedProducts.push({
+                  categoryName,
+                  browseOrderValue,
+                });
+              }
+            })
+            .then(() => {
+              return cy.get("li#datatable_next").then(($nextLi) => {
+                const isDisabled = $nextLi.hasClass("disabled"); //check whether $nextLi element  has disabled class or not
+
+                if (!isDisabled) {
+                  return cy
+                    .wrap($nextLi)
+                    .find("a")
+                    .click({ force: true })
+                    .then(() => {
+                      return scrapePageAndGoNext(); // recursive call
+                    });
+                } else {
+                  console.log("Checked Browsed Products : ", checkedProducts);
+                  // return the final array via Cypress chain
+                  return cy.wrap(checkedProducts);
+                }
+              });
+            });
+        });
+      }
+
+      return scrapePageAndGoNext();
+    });
 });
 
 // ***********************************************
