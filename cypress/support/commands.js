@@ -150,6 +150,63 @@ Cypress.Commands.add(
   }
 );
 
+
+
+Cypress.Commands.add("scrollToSocialMedia", () => {
+  
+  cy.get('.grid-cols-4').scrollIntoView().should("be.visible");  // Scroll  till social media  section appears in the frame
+
+});
+
+Cypress.Commands.add("initalEightPosts", () => {
+  
+  cy.get('.grid-cols-4 .flex.items-center.justify-between.px-4.py-3 .flex.items-center.gap-x-2 .font-semibold.leading-6 a').should('have.length','8');
+
+});
+
+
+Cypress.Commands.add("loadMorePosts", () => {
+  let totalPosts = 8;
+
+  // Initial validation of the starting 8 posts
+  cy.initalEightPosts({ timeout: 10000 }).should('have.length', totalPosts).then(() => {
+      console.log(`Initial posts validated: ${totalPosts}`);
+      loadPostsAndValidate();
+    });
+
+  // Recursive function to load posts and validate
+  function loadPostsAndValidate() {
+    cy.get('button').contains('Load More').then(($button) => {
+          cy.wrap($button).should('be.visible').click();
+          cy.wait(1000);
+
+          // Wait for posts to load and validate the new count
+          cy.get('.grid-cols-4 .flex.items-center.justify-between.px-4.py-3 .flex.items-center.gap-x-2 .font-semibold.leading-6 a').then(($posts) => {
+            cy.wait(1000);
+            const newCount = $posts.length;
+            const added = newCount - totalPosts;
+            
+            // Log progress
+            console.log(`Loaded ${added} more posts, total now: ${newCount}`);
+            console.log(`newCount :: ${newCount} && added :: ${added}`);
+
+            // Update total posts
+            totalPosts = newCount;
+            console.log(`totalPosts :: ${totalPosts} `);
+
+            if (added < 8) {
+              console.log("Fewer than 8 posts added. Reached the end.");
+              return;
+            }
+
+            // Continue loading if the button is still available
+            loadPostsAndValidate();
+          });
+        
+      });
+  }
+});
+
 // ***********************************************
 // This example commands.js shows you how to
 // create various custom commands and overwrite
