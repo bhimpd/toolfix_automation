@@ -278,6 +278,93 @@ Cypress.Commands.add("getCategoriesFromCMS", () => {
     });
 });
 
+Cypress.Commands.add("getAboutUsLists", () => {
+  //login to DashBoard and redirects to about us page.
+  cy.cmsLogin();
+  cy.contains("a.menu-link .menu-text", "About us").click();
+  cy.location("pathname").should("contain", "/aboutus");
+  cy.contains(".card-custom .card-title h3.card-label", "About us Lists");
+
+  //fetching all the table head name and storing according to index
+  const columnIndexMap = {};
+  const activeProducts = [];
+
+  cy.get("table#datatable thead tr th")
+    .each(($th, index) => {
+      const headerText = $th.text().trim();
+      columnIndexMap[headerText] = index;
+    })
+    .then(() => {
+      cy.log(JSON.stringify(columnIndexMap));
+
+      //function to paginate and stores the data having status "active"
+      function paginationAndGoNext() {
+        cy.wait(500).then(() => {
+          cy.get("table#datatable tbody tr")
+            .each(($row) => {
+              // cy.log(JSON.stringify($row));
+
+              const $columns = $row.find("td");
+              // console.log($columns);
+
+              //it fetchs the text from the index[0] in first loop as .eq(0).text().trim();
+              const title = $columns.eq(columnIndexMap["Title"]).text().trim();
+
+              const description = $columns
+                .eq(columnIndexMap["Description"])
+                .text()
+                .trim();
+
+              const imageUrl = $columns
+                .eq(columnIndexMap["ImageUrl"])
+                .text()
+                .trim();
+
+              const isStatusChecked = $columns
+                .eq(columnIndexMap["Status"])
+                .find('input[type="checkbox"]')
+                .prop("checked");
+
+              const order = $columns.eq(columnIndexMap["Order"]).text().trim();
+
+              const redirectUrl = $columns
+                .eq(columnIndexMap["Redirect Url"])
+                .text()
+                .trim();
+
+              if (isStatusChecked) {
+                activeProducts.push({
+                  title,
+                  description,
+                  imageUrl,
+                  order,
+                  redirectUrl,
+                  isStatusChecked,
+                });
+
+                console.log(activeProducts);
+              }
+            })
+            .then(() => {
+              cy.get(".pagination #datatable_next").then(($nextButton) => {
+                const isDisabled = $nextButton.hasClass("disabled");
+
+                if (!isDisabled) {
+                  cy.wrap($nextButton)
+                    .find("a")
+                    .click({ force: true })
+                    .then(() => {
+                      paginationAndGoNext(); // recursive call
+                    });
+                }
+                return cy.wrap(activeProducts);
+              });
+            });
+        });
+      }
+      paginationAndGoNext();
+    });
+});
 // ***********************************************
 // This example commands.js shows you how to
 // create various custom commands and overwrite
