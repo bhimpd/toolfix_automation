@@ -1,5 +1,6 @@
 const { faker } = require("@faker-js/faker");
-import "cypress-iframe";
+import 'cypress-iframe';
+require('cypress-get-table')
 
 Cypress.on("uncaught:exception", (err, runnable) => {
   // prevent the error from failing the test
@@ -15,6 +16,7 @@ Cypress.Commands.add("login", () => {
   cy.get("button[type='submit']").click();
   cy.visit("/");
 });
+
 
 Cypress.Commands.add("home", () => {
   cy.visit("/");
@@ -33,14 +35,12 @@ Cypress.Commands.add("cmsLogin", () => {
     .should("exist")
     .type(Cypress.env("CMSPW"));
 
-  cy.contains("button", "Sign In").click();
+  cy.contains("button", "Sign In").click();  
 
   cy.url().should("include", "/admin/dashboard");
-  cy.get(".card-header .card-title").should(
-    "contain.text",
-    "Welcome to Dashboard"
-  );
-});
+  cy.get(".card-header .card-title").should("contain.text", "Welcome to Dashboard");
+  
+  });
 
 Cypress.Commands.add("dbLogin", () => {
   cy.visit("https://apid.toolfix.com.au/phpmyadmin/");
@@ -94,277 +94,211 @@ Cypress.Commands.add("cmsVisit", (path) => {
   cy.visit(Cypress.env("CMSURL") + path);
 });
 
-Cypress.Commands.add(
-  "fillRegistrationForm",
-  ({
-    fName,
-    lName,
-    email,
-    phone,
-    company,
-    address,
-    password,
-    confirmPassword,
-  }) => {
-    cy.get(".grid > :nth-child(1) > .w-full").type(fName);
-    cy.get(".grid > :nth-child(2) > .w-full").type(lName);
-    cy.get(".relative #email").type(email);
-    cy.get(":nth-child(3) > .w-full").type(phone);
-    cy.get(":nth-child(4) > .w-full").type(company);
-    cy.get('input[placeholder="Enter Address"]').type(address);
-    cy.wait(2000);
-    cy.get(".form > .absolute > :nth-child(1)").click();
-    cy.get(":nth-child(11) > .relative > .w-full").type(password);
-    cy.get(":nth-child(12) > .relative > .w-full").type(confirmPassword);
-    cy.get(".mt-7 > .p-3").click();
-  }
-);
 
-Cypress.Commands.add(
-  "addContactUsForm",
-  ({ fullName, email, location, phone, subject, message }) => {
-    console.log({ fullName, email, location, phone, subject, message });
+Cypress.Commands.add("fillRegistrationForm",({fName,lName,email,phone,company,address,password,confirmPassword})=>{
+  cy.get(".grid > :nth-child(1) > .w-full").type(fName);
+  cy.get(".grid > :nth-child(2) > .w-full").type(lName);
+  cy.get(".relative #email").type(email);
+  cy.get(":nth-child(3) > .w-full").type(phone);
+  cy.get(":nth-child(4) > .w-full").type(company);
+  cy.get('input[placeholder="Enter Address"]').type(address);
+  cy.wait(2000);
+  cy.get(".form > .absolute > :nth-child(1)").click();
+  cy.get(":nth-child(11) > .relative > .w-full").type(password);
+  cy.get(":nth-child(12) > .relative > .w-full").type(confirmPassword);
+  cy.get(".mt-7 > .p-3").click();
+});
 
-    cy.get(".form-input input[placeholder='David Blogg']").type(fullName);
-    cy.get(".relative #email").type(email);
-    cy.get(".form-input input[placeholder='Sydney']").type(location);
-    cy.get(".form-input input[placeholder='01 1234 2456 8793']").type(phone);
-    cy.get(".form-input input[placeholder='Subject Here']").type(subject);
-    cy.wait(1000);
-    cy.get("textarea[placeholder='Message Here']").type(message);
+Cypress.Commands.add("addContactUsForm",({fullName, email, location, phone, subject, message}) => {
 
-    cy.get("button[type='submit']").click();
-  }
-);
+  console.log({ fullName, email, location, phone, subject, message }); 
 
-Cypress.Commands.add(
-  "addFaqForm",
-  ({ question, answer, status, sortOrder }) => {
-    cy.get("#question").type(question);
+  cy.get(".form-input input[placeholder='David Blogg']").type(fullName);
+  cy.get(".relative #email").type(email);
+  cy.get(".form-input input[placeholder='Sydney']").type(location);
+  cy.get(".form-input input[placeholder='01 1234 2456 8793']").type(phone);
+  cy.get(".form-input input[placeholder='Subject Here']").type(subject);
+  cy.wait(1000);
+  cy.get("textarea[placeholder='Message Here']").type(message);
 
-    cy.frameLoaded("iframe");
-    cy.iframe("iframe").clear().type(answer);
+  cy.get("button[type='submit']").click();
+});
 
-    cy.get("#faq_status_id").select("Draft").should("have.value", "Draft");
-    cy.get("#sort_order").type(sortOrder);
-  }
-);
+
+Cypress.Commands.add("addFaqForm",({question, answer, status, sortOrder})=>{
+  
+  cy.get("#question").type(question);
+
+  cy.frameLoaded('iframe');
+  cy.iframe('iframe').clear().type(answer);
+
+  cy.get("#faq_status_id").select('Draft').should('have.value','Draft');
+  cy.get("#sort_order").type(sortOrder);
+
+});
+
+Cypress.Commands.add("getCategoriesFromCMS", () => {
+
+  //login to DashBoard and redirects to Product Categories page.
+  cy.cmsLogin();
+  cy.contains("a.menu-link .menu-text", "Product Categories").click();
+  cy.location("pathname").should("contain", "/product-categories");
+
+  cy.scrapePaginatedTable((columns, map, results) => {
+    const categoryName = columns.eq(map["Category Name"]).text().trim();
+    const isChecked = columns.eq(map["Browse Product?"]).find('input[type="checkbox"]').prop("checked");
+    const order = parseInt(columns.eq(map["Browse Order"]).find('input[type="number"]').val());
+
+    if (isChecked) {
+      results.push({ categoryName, browseOrderValue: order });
+    }
+  });
+});
+
 
 Cypress.Commands.add("scrollToSocialMedia", () => {
-  cy.get(".grid-cols-4").scrollIntoView().should("be.visible"); // Scroll  till social media  section appears in the frame
+  
+  cy.get('.grid-cols-4').scrollIntoView().should("be.visible");  // Scroll  till social media  section appears in the frame
+
 });
 
 Cypress.Commands.add("initalEightPosts", () => {
-  cy.get(
-    ".grid-cols-4 .flex.items-center.justify-between.px-4.py-3 .flex.items-center.gap-x-2 .font-semibold.leading-6 a"
-  ).should("have.length", "8");
+
+  cy.get('.grid-cols-4 .flex.items-center.justify-between.px-4.py-3 .flex.items-center.gap-x-2 .font-semibold.leading-6 a').should('have.length','8');
+
 });
+
 
 Cypress.Commands.add("loadMorePosts", () => {
   let totalPosts = 8;
 
   // Initial validation of the starting 8 posts
-  cy.initalEightPosts({ timeout: 10000 })
-    .should("have.length", totalPosts)
-    .then(() => {
+  cy.initalEightPosts({ timeout: 10000 }).should('have.length', totalPosts).then(() => {
       console.log(`Initial posts validated: ${totalPosts}`);
       loadPostsAndValidate();
     });
 
   // Recursive function to load posts and validate
   function loadPostsAndValidate() {
-    cy.get("button")
-      .contains("Load More")
-      .then(($button) => {
-        cy.wrap($button).should("be.visible").click();
-        cy.wait(1000);
-
-        // Wait for posts to load and validate the new count
-        cy.get(
-          ".grid-cols-4 .flex.items-center.justify-between.px-4.py-3 .flex.items-center.gap-x-2 .font-semibold.leading-6 a"
-        ).then(($posts) => {
+    cy.get('button').contains('Load More').then(($button) => {
+          cy.wrap($button).should('be.visible').click();
           cy.wait(1000);
-          const newCount = $posts.length;
-          const added = newCount - totalPosts;
 
-          // Log progress
-          console.log(`Loaded ${added} more posts, total now: ${newCount}`);
-          console.log(`newCount :: ${newCount} && added :: ${added}`);
+          // Wait for posts to load and validate the new count
+          cy.get('.grid-cols-4 .flex.items-center.justify-between.px-4.py-3 .flex.items-center.gap-x-2 .font-semibold.leading-6 a').then(($posts) => {
+            cy.wait(1000);
+            const newCount = $posts.length;
+            const added = newCount - totalPosts;
+            
+            // Log progress
+            console.log(`Loaded ${added} more posts, total now: ${newCount}`);
+            console.log(`newCount :: ${newCount} && added :: ${added}`);
 
-          // Update total posts
-          totalPosts = newCount;
-          console.log(`totalPosts :: ${totalPosts} `);
+            // Update total posts
+            totalPosts = newCount;
+            console.log(`totalPosts :: ${totalPosts} `);
 
-          if (added < 8) {
-            console.log("Fewer than 8 posts added. Reached the end.");
-            return;
-          }
+            if (added < 8) {
+              console.log("Fewer than 8 posts added. Reached the end.");
+              return;
+            }
 
-          // Continue loading if the button is still available
-          loadPostsAndValidate();
-        });
+            // Continue loading if the button is still available
+            loadPostsAndValidate();
+          });
+        
       });
   }
 });
 
-Cypress.Commands.add("getCategoriesFromCMS", () => {
-  const checkedProducts = [];
-  const columnIndexMap = {};
-
-  cy.cmsLogin();
-  cy.contains("a.menu-link .menu-text", "Product Categories").click();
-  cy.location("pathname").should("contain", "/product-categories");
-
-  return cy
-    .get("table#datatable thead tr th")
-    .each(($th, index) => {
-      const headerText = $th.text().trim();
-      columnIndexMap[headerText] = index;
-    })
-    .then(() => {
-      function scrapePageAndGoNext() {
-        return cy.wait(500).then(() => {
-          return cy
-            .get("table#datatable tbody tr")
-            .each(($row) => {
-              const $columns = $row.find("td");
-
-              const categoryName = $columns
-                .eq(columnIndexMap["Category Name"])
-                .text()
-                .trim();
-              const isBrowseProductChecked = $columns
-                .eq(columnIndexMap["Browse Product?"])
-                .find('input[type="checkbox"]')
-                .prop("checked"); //check if the property "checked" present or not & returned true or false
-
-              const browseOrderValue = parseInt(
-                $columns
-                  .eq(columnIndexMap["Browse Order"])
-                  .find('input[type="number"]')
-                  .val()
-              );
-
-              if (isBrowseProductChecked) {
-                checkedProducts.push({
-                  categoryName,
-                  browseOrderValue,
-                });
-              }
-            })
-            .then(() => {
-              return cy.get("li#datatable_next").then(($nextLi) => {
-                const isDisabled = $nextLi.hasClass("disabled"); //check whether $nextLi element  has disabled class or not
-
-                if (!isDisabled) {
-                  return cy
-                    .wrap($nextLi)
-                    .find("a")
-                    .click({ force: true })
-                    .then(() => {
-                      return scrapePageAndGoNext(); // recursive call
-                    });
-                } else {
-                  console.log("Checked Browsed Products : ", checkedProducts);
-                  // return the final array via Cypress chain
-                  return cy.wrap(checkedProducts);
-                }
-              });
-            });
-        });
-      }
-
-      return scrapePageAndGoNext();
-    });
-});
-
 Cypress.Commands.add("getAboutUsLists", () => {
+
   //login to DashBoard and redirects to about us page.
   cy.cmsLogin();
   cy.contains("a.menu-link .menu-text", "About us").click();
   cy.location("pathname").should("contain", "/aboutus");
-  cy.contains(".card-custom .card-title h3.card-label", "About us Lists");
+  cy.contains('.card-custom .card-title h3.card-label',"About us Lists");
 
-  //fetching all the table head name and storing according to index
-  const columnIndexMap = {};
-  const activeProducts = [];
+  cy.scrapePaginatedTable((columns, map, results) => {
+    const title = columns.eq(map["Title"]).text().trim();
+    const description = columns.eq(map["Description"]).text().trim();
+    const imageUrl = columns.eq(map["ImageUrl"]).text().trim();
+    const isChecked = columns.eq(map["Status"]).find('input[type="checkbox"]').prop("checked");
+    const order = parseInt(columns.eq(map["Order"]).text().trim());
+    const redirectUrl = columns.eq(map["Redirect Url"]).text().trim();
 
-  cy.get("table#datatable thead tr th")
-    .each(($th, index) => {
-      const headerText = $th.text().trim();
-      columnIndexMap[headerText] = index;
-    })
-    .then(() => {
-      cy.log(JSON.stringify(columnIndexMap));
-
-      //function to paginate and stores the data having status "active"
-      function paginationAndGoNext() {
-        cy.wait(500).then(() => {
-          cy.get("table#datatable tbody tr")
-            .each(($row) => {
-              // cy.log(JSON.stringify($row));
-
-              const $columns = $row.find("td");
-              // console.log($columns);
-
-              //it fetchs the text from the index[0] in first loop as .eq(0).text().trim();
-              const title = $columns.eq(columnIndexMap["Title"]).text().trim();
-
-              const description = $columns
-                .eq(columnIndexMap["Description"])
-                .text()
-                .trim();
-
-              const imageUrl = $columns
-                .eq(columnIndexMap["ImageUrl"])
-                .text()
-                .trim();
-
-              const isStatusChecked = $columns
-                .eq(columnIndexMap["Status"])
-                .find('input[type="checkbox"]')
-                .prop("checked");
-
-              const order = $columns.eq(columnIndexMap["Order"]).text().trim();
-
-              const redirectUrl = $columns
-                .eq(columnIndexMap["Redirect Url"])
-                .text()
-                .trim();
-
-              if (isStatusChecked) {
-                activeProducts.push({
-                  title,
-                  description,
-                  imageUrl,
-                  order,
-                  redirectUrl,
-                  isStatusChecked,
-                });
-
-                console.log(activeProducts);
-              }
-            })
-            .then(() => {
-              cy.get(".pagination #datatable_next").then(($nextButton) => {
-                const isDisabled = $nextButton.hasClass("disabled");
-
-                if (!isDisabled) {
-                  cy.wrap($nextButton)
-                    .find("a")
-                    .click({ force: true })
-                    .then(() => {
-                      paginationAndGoNext(); // recursive call
-                    });
-                }
-                return cy.wrap(activeProducts);
-              });
-            });
-        });
-      }
-      paginationAndGoNext();
-    });
+    if (isChecked) {
+      results.push({ title, description, imageUrl, order, redirectUrl });
+    }
+  });
 });
+
+
+Cypress.Commands.add("getContactFromCMS", () =>{
+
+  //login to DashBoard and redirects to Our Location Page.
+  cy.cmsLogin();
+  cy.contains("a.menu-link .menu-text", "Our Locations").click();
+  cy.location("pathname").should("contain", "/locations");
+  cy.contains('.card-custom .card-title h3.card-label',"List of our locations");
+
+  cy.scrapePaginatedTable((columns, map, results) =>{
+    const name = columns.eq(map["Name"]).text().trim();
+    const tag = columns.eq(map["Tag"]).text().trim();
+    const address = columns.eq(map["Address"]).text().trim();
+    const openingHour = columns.eq(map["Opening Hour"]).text().trim();
+    const phoneNumber = columns.eq(map["Phone Number"]).text().trim();
+    const order = columns.eq(map["Order"]).text().trim();
+    const redirectUrl = columns.eq(map["Redirect Url"]).text().trim();
+    const status = columns.eq(map["Status"]).find('input[type="checkbox"]').prop("checked");
+    const headOffice = columns.eq(map["HeadOffice"]).find('input[type="checkbox"]').prop("checked");
+
+    if (status) {
+      results.push({ name, tag, address, openingHour, phoneNumber, order, redirectUrl,status,headOffice });
+    }  
+  });
+});
+
+
+
+//generic function to get headers, row and paginate.
+Cypress.Commands.add("scrapePaginatedTable", (rowProcessor) => {
+  const columnIndexMap = {};
+  const results = [];
+
+  cy.get("table#datatable thead tr th").each(($th, index) => {
+    const headerText = $th.text().trim();
+    columnIndexMap[headerText] = index;
+  }).then(() => {
+    function scrapePageAndGoNext() {
+      cy.wait(300).then(() => {
+        cy.get("table#datatable tbody tr").each(($row) => {
+          const $columns = $row.find("td");
+          rowProcessor($columns, columnIndexMap, results);
+        }).then(() => {
+          cy.get(".pagination li#datatable_next").then(($nextBtn) => {
+            const isDisabled = $nextBtn.hasClass("disabled");
+
+            if (!isDisabled) {
+              cy.wrap($nextBtn).find("a").click({ force: true }).then(() => {
+                return cy.wait(500).then(() =>scrapePageAndGoNext()); // recursive
+              });
+            } else {
+              return cy.wrap(results);
+            }
+          });
+        });
+      });
+    }
+
+    scrapePageAndGoNext();
+  });
+});
+
+
+
+
+
 // ***********************************************
 // This example commands.js shows you how to
 // create various custom commands and overwrite
