@@ -260,6 +260,23 @@ Cypress.Commands.add("getContactFromCMS", () =>{
 });
 
 
+//geting the slider lists 
+Cypress.Commands.add("getSlidersFromCMS", () =>{
+
+  //login to DashBoard and redirects to Our Location Page.
+  cy.cmsLogin();
+  cy.contains("a.menu-link .menu-text", "Slider").click();
+  cy.location("pathname").should("contain", "/slider");
+  cy.contains('.card-custom .card-title h3.card-label',"List of Sliders");
+
+
+  cy.scrapePaginatedTable((columns, map, results) =>{
+    const type = columns.eq(map["Type"]).text().trim();
+    results.push({ type}); 
+  });
+});
+
+
 
 //generic function to get headers, row and paginate.
 Cypress.Commands.add("scrapePaginatedTable", (rowProcessor) => {
