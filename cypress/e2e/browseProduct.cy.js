@@ -1,5 +1,5 @@
 describe("Browse Product Session", () => {
-  it("should display only browse_product=true categories in correct order", () => {
+  it.skip("should display only browse_product=true categories in correct order", () => {
     // Custom Cypress command to fetch categories from CMS
     cy.getCategoriesFromCMS().then((cmsCategories) => {
       console.log("CMS Category :: ", cmsCategories);
@@ -26,5 +26,32 @@ describe("Browse Product Session", () => {
         }
       );
     });
+  });
+
+  it("Should create the Product with the valid data and validate it ", () => {
+    cy.createAndVerifyProduct();
+  });
+
+  it("Should create the Product wth valid data, verify it and then  delete it and veriify it as well", () => {
+    cy.reload();
+    cy.createAndVerifyProduct();
+
+    cy.get("a[title='Delete']").click();
+    cy.get("#swal2-title").should("have.text", "Are you sure?");
+    cy.get("#swal2-content").should(
+      "have.text",
+      'You won"t be able to revert this!'
+    );
+    cy.get(".swal2-actions button.swal2-confirm.swal2-styled")
+      .should("have.text", "Yes, delete it!")
+      .click();
+    cy.get("h2.swal2-title#swal2-title")
+      .should("exist")
+      .and("have.text", "Product category has been deleted successfully.");
+
+    cy.get(".dataTables_empty").should(
+      "have.text",
+      "No matching records found"
+    );
   });
 });

@@ -101,7 +101,7 @@ describe("Catalogue Section", () => {
                             });
                         });
                         
-                    });;
+                    });
                 }
             });
         });

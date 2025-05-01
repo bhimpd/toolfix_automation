@@ -1,6 +1,8 @@
 const { faker } = require("@faker-js/faker");
 import 'cypress-iframe';
 require('cypress-get-table')
+import 'cypress-file-upload';
+
 
 Cypress.on("uncaught:exception", (err, runnable) => {
   // prevent the error from failing the test
@@ -312,6 +314,84 @@ Cypress.Commands.add("scrapePaginatedTable", (rowProcessor) => {
   });
 });
 
+
+
+
+const menuOrder = faker.number.int({min:1, max:10});
+const browseOrder = faker.number.int({min:-99, max:99});
+const myobId = faker.number.int({min:1000, max:9999});
+
+const baseProductName = faker.commerce.productName();
+const timestamp = Date.now();
+const productName = `${baseProductName} ${timestamp}`;
+const slug = productName.toLowerCase().replace(/\s+/g, "-");
+const description = faker.commerce.productDescription();
+const urlKey = productName.toLowerCase().replace(/\s+/g, "-");
+const metaTitle = faker.commerce.productName();
+const metaKeyword = productName.toLowerCase().replace(/\s+/g, "-");
+const metaDescription = faker.commerce.productDescription();
+
+
+Cypress.Commands.add("createAndVerifyProduct",() =>{
+   //login to DashBoard and redirects to Product Categories page.
+   cy.cmsLogin();
+   cy.contains("a.menu-link .menu-text", "Product Categories").click();
+   cy.location("pathname").should("contain", "/product-categories");
+   cy.contains(".card .card-header .card-title h3.card-label", "List of Product Categories");
+
+   //click on New Category Button
+   cy.get('.card-toolbar > .btn').click(); 
+
+   //verifying the url and the page
+   cy.location("pathname").should("contain","/create");
+   cy.contains(".row .card .card-header .card-title  h3.card-label", "Product Category Details");
+
+   //verifying the required fields ie name and slug from the page
+   cy.get(".form-group label[for='name']").should('exist').and('be.visible');
+   cy.get(".form-group label[for='slug']").should('exist').and('be.visible');
+
+   //Start registering the product data with
+   cy.get("#order").type(menuOrder);
+   cy.get("#browse_order").type(browseOrder);
+   cy.get("#myob_id").type(myobId);
+   cy.get("#name").type(productName);
+   cy.get("#slug").type(slug);
+   cy.get("#desc").type(description);
+   cy.get('label[for="is_featured"]').click();
+
+   //Image Upload
+   cy.contains(".input-group-append button","Upload").click();
+   cy.contains(".nav-text.viewMediaTab", "Media Library").click();
+   cy.get('#3b89a936-d164-45f2-bc4c-3d65e2df5b30').check({ force: true });
+   cy.get("#insert-btn").click();
+
+   cy.get('label[for="show_on_menu"]').click();
+   cy.get("#parent_id").select("2 - Drilling ()");  //hardcode value selected
+   cy.get('label[for="show_on_homepage"]').click();
+   cy.get("#seo #slug").type(urlKey);
+   cy.get("#meta_title").type(metaTitle);
+   cy.get("#meta_keywords").type(metaKeyword);
+   cy.iframe().find('p').should('be.visible').type(metaDescription);
+
+   cy.get(".card-footer button[type='submit']").click();
+
+   cy.get("#swal2-title", { timeout: 1000 }).should('be.visible').and('have.text', 'Slide has been added successfully.');
+
+   // Ended registering the Product with the valid data
+
+   //verifying the Registered Data
+   cy.wait(1000);
+   cy.get("input[type='search']").type(productName);
+   cy.get('.odd > :nth-child(2)').should('have.text',myobId);
+   cy.get('.odd > :nth-child(4)').should('have.text',productName);
+   cy.get('input.is_featured').should('be.checked');
+   cy.get('.odd > :nth-child(6)').should('have.text',"Drilling");
+   cy.get('input.show_on_menu').should('be.checked');
+   cy.get('input[name="order"]').should('have.value',menuOrder);
+   cy.get('input[name="browse_order"]').should('have.value',browseOrder);
+
+
+});
 
 
 
